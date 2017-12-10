@@ -1,0 +1,25 @@
+<launch>
+  <node name="elec4010_key"           pkg="elec4010"   type="elec4010_key"           output="screen"></node>
+  <node name="elec4010_laser"         pkg="elec4010"   type="elec4010_laser"         output="screen"></node>
+  <node name="elec4010_tracker"       pkg="elec4010"   type="elec4010_tracker"       output="screen"></node>
+
+
+  <node name="elec4010_tracker_pid"   pkg="elec4010"   type="elec4010_tracker_pid"   output="screen">
+    <param name="kp_d"         type="double" value="6"/>
+    <param name="ki_d"         type="double" value="0.2"/>
+    <param name="int_max_d"    type="double" value="0.4"/>
+    <param name="kp_a"         type="double" value="0.015"/>
+    <param name="ki_a"         type="double" value="0.00015"/>
+    <param name="int_max_a"    type="double" value="0.3"/>
+    <param name="dist_sp"      type="double" value="0.0067"/>
+  </node>
+  <node name="key_teleop.py"          pkg="key_teleop" type="key_teleop.py"          output="screen" launch-prefix="xterm -e">
+  </node>
+
+  <node name="elec4010_autodriver"    pkg="elec4010"   type="elec4010_autodriver"    output="screen">
+  </node>
+
+  <include file="$(find elec4010)/launch/hector.launch" />
+  <node name="rviz" pkg="rviz" type="rviz">
+  </node>
+</launch>
