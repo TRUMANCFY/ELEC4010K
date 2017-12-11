@@ -16,7 +16,10 @@
   <node name="key_teleop.py"          pkg="key_teleop" type="key_teleop.py"          output="screen" launch-prefix="xterm -e">
   </node>
 
-  <node name="elec4010_autodriver"    pkg="elec4010"   type="elec4010_autodriver"    output="screen">
+  <node name="elec4010_autodriver"    pkg="elec4010"   type="elec4010_autodriver"    output="screen" launch-prefix="xterm -e">
+    <param name="min"           type="double" value="0.75"/>
+    <param name="nodetect"      type="double" value="1.5"/>
+    <param name="weight"        type="double" value="-7.2"/>
   </node>
 
   <include file="$(find elec4010)/launch/hector.launch" />
