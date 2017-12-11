@@ -2,7 +2,7 @@
   <node name="elec4010_key"           pkg="elec4010"   type="elec4010_key"           output="screen"></node>
   <node name="elec4010_laser"         pkg="elec4010"   type="elec4010_laser"         output="screen"></node>
   <node name="elec4010_tracker"       pkg="elec4010"   type="elec4010_tracker"       output="screen"></node>
-
+  <node name="py_image_subscriber"       pkg="py_image_subscriber"   type="py_image_subscriber"       output="screen"></node>
 
   <node name="elec4010_tracker_pid"   pkg="elec4010"   type="elec4010_tracker_pid"   output="screen">
     <param name="kp_d"         type="double" value="6"/>

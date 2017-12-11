@@ -11,7 +11,8 @@
 import rospy                      # rospy
 import numpy as np                # numpy
 import cv2                        # OpenCV2
-from sensor_msgs.msg import Image # ROS Image message
+import math
+from sensor_msgs.msg import Image, LaserScan # ROS Image message
 from cv_bridge import CvBridge, CvBridgeError # ROS Image message -> OpenCV2 image converter
 
 from geometry_msgs.msg import Pose,PoseStamped, Point, Quaternion, Vector3, Polygon
@@ -26,31 +27,33 @@ pic_list = []
 marker_array = MarkerArray()
 dis=0
 slam_pose = PoseStamped()
+name_list = ['obama', 'avril', 'zhang', 'prince', '2D']
 not_find_name_list = ['obama', 'avril', 'zhang', 'prince', '2D']
-color_list = [[1.0,0.1,0.1], [0.1,1.0,0.1], [0.1,0.1,1.0], [0.5,0.5,0.1], [0.5,1.0,0.1]]
-marker_id = 0
+color_list = [[1.0,0.0,0.0], [0.0,1.0,0.0], [0.0,0.0,1.0], [1.0,1.0,0.0], [0.0,1.0,1.0]]
+laser_reading = LaserScan()
 
 def get_slam_pose(slam_out_pose):
     global slam_pose
     slam_pose = slam_out_pose
 
+def get_laser_scan(laser_scan):
+    global laser_reading
+    laser_reading = laser_scan
+
 def Marker_place(pos, dis,color):
     global marker_array
-    global marker_id
     imageMarker = Marker()
     imageMarker.header.frame_id = "/map"
     imageMarker.ns = "image"
-    imageMarker.id = marker_id
+    imageMarker.id = color_list.index(color)
     imageMarker.type = 2 # sphere
     imageMarker.action = 0
-    if pos.pose.orientation.z > 0:
-        direction = 1
-    else:
-        direction = -1
-    robot_theta = direction*np.arccos(pos.pose.orientation.w) * 2.0
-    print robot_theta
-    imageMarker.pose.position.x = pos.pose.position.x - 2*np.cos(robot_theta)
-    imageMarker.pose.position.y = pos.pose.position.y - 2*np.sin(robot_theta)
+    t1 = 2.0 * (pos.pose.orientation.w * pos.pose.orientation.z + pos.pose.orientation.x * pos.pose.orientation.y)
+    t2 = 1.0 - 2.0 * (pos.pose.orientation.y * pos.pose.orientation.y + pos.pose.orientation.z * pos.pose.orientation.z)
+    z = math.degrees(math.atan2(t1,t2)) - 90
+    h = len(laser_reading.ranges)/2
+    imageMarker.pose.position.x = pos.pose.position.x + laser_reading.ranges[h]*np.cos(z*(2*np.pi)/360)
+    imageMarker.pose.position.y = pos.pose.position.y + laser_reading.ranges[h]*np.sin(z*(2*np.pi)/360)
     imageMarker.pose.position.z = pos.pose.position.z
     imageMarker.pose.orientation.x = 0
     imageMarker.pose.orientation.y = 0
@@ -65,7 +68,6 @@ def Marker_place(pos, dis,color):
     imageMarker.color.a = 1.0
     imageMarker.lifetime = rospy.Duration()
     marker_array.markers.append(imageMarker)
-    marker_id = marker_id + 1
 
 def init_pattern():
     print("initialize pattern")
@@ -98,7 +100,8 @@ def init_pattern():
     img_list1.append(img3_)
     img_list1.append(img4_)
     img_list1.append(img5_)
-    name_list = ['obama', 'avril', 'zhang', 'prince', '2D']
+    global name_list
+    #name_list = ['obama', 'avril', 'zhang', 'prince', '2D']
 
 
     for i in range(5):
@@ -254,12 +257,10 @@ def img_extract(cv2_img):
                 img2 = cv2.rectangle(img2, (x, y), (x+w, y+h), (0, 0, 255), 2)
                 img_new = cv2.rectangle(img_new, (x, y), (x+w, y+h), (0, 0, 255), 2)
                 img_plus = cv2.rectangle(img_plus, (x, y), (x+w, y+h), (0, 0, 255), 2)
-                if n in not_find_name_list: #and y > 0.3*512 and y+h < 0.7*512:
-                    print ("arrive here")
+                if n in not_find_name_list:
                     dis = 256/(0.4142*h)
-                    color_index = not_find_name_list.index(n)
+                    color_index = name_list.index(n)
                     color = color_list[color_index]
-                    print color
                     Marker_place(slam_pose,dis,color)
                     not_find_name_list.remove(n)
                     print(not_find_name_list)
@@ -276,9 +277,6 @@ def img_extract(cv2_img):
         return lap, img2,img_plus,img_new, img_seg
 
 
-
-
-
 def image_callback(msg):
     print("PyImageSubscriber node  Received an image!")
     try:
@@ -289,9 +287,10 @@ def image_callback(msg):
         print(e)
     else:
         # Display the converted image
-        marker_array_Pub = rospy.Publisher('marker_array', MarkerArray, queue_size=10)
+        marker_array_Pub = rospy.Publisher('marker_array', MarkerArray, queue_size=100)
         marker_array_Pub.publish(marker_array)
         rospy.Subscriber("/slam_out_pose", PoseStamped, get_slam_pose)
+        rospy.Subscriber("/vrep/scan", LaserScan, get_laser_scan)
         cv2.imshow("lap", lap)
         cv2.imshow("Image Display", img_track)
         #cv2.imshow("Laplacian", lap)
